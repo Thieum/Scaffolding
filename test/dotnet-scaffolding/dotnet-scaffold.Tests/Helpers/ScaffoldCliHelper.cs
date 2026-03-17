@@ -87,11 +87,13 @@ internal static class ScaffoldCliHelper
     }
 
     /// <summary>
-    /// Configures a <see cref="ProcessStartInfo"/> to use the Arcade dotnet installation.
-    /// Sets DOTNET_ROOT so child processes (e.g., <c>dotnet new</c> invoked by the scaffold tool)
-    /// also resolve the correct SDK and runtimes.
-    /// Sets DOTNET_MULTILEVEL_LOOKUP=0 to prevent the dotnet host from falling back to
-    /// the global install at C:\Program Files\dotnet\ which may have an older SDK.
+    /// Configures a <see cref="ProcessStartInfo"/> for running dotnet commands
+    /// in integration tests. Sets the resolved dotnet path and ensures the child
+    /// process has a consistent environment by pointing DOTNET_ROOT to the same
+    /// dotnet installation directory. Does NOT restrict multilevel lookup so the
+    /// host can resolve SDKs and runtimes from both the local and global installs.
+    /// Clears MSBUILD_EXE_PATH to prevent the test host's MSBuild context from
+    /// leaking into the child build process.
     /// </summary>
     private static void ConfigureDotNetEnvironment(ProcessStartInfo startInfo)
     {
@@ -102,8 +104,13 @@ internal static class ScaffoldCliHelper
         {
             var dotnetRoot = Path.GetDirectoryName(dotnetPath)!;
             startInfo.Environment["DOTNET_ROOT"] = dotnetRoot;
-            startInfo.Environment["DOTNET_MULTILEVEL_LOOKUP"] = "0";
         }
+
+        // Clear variables that the test host process may have set and which
+        // can poison child MSBuild invocations with wrong assembly versions.
+        startInfo.Environment.Remove("MSBUILD_EXE_PATH");
+        startInfo.Environment.Remove("MSBuildSDKsPath");
+        startInfo.Environment.Remove("MSBuildExtensionsPath");
     }
 
     /// <summary>

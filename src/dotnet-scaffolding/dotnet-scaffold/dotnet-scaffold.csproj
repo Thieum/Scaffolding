@@ -71,7 +71,8 @@
     <None Pack="true" Include="AspNet\Templates\net9.0\Views\*.tt" PackagePath="AspNet\Templates\net8.0\Views\" />
     <None Pack="true" Include="AspNet\Templates\net9.0\BlazorIdentity\Pages\AccessDenied.tt" PackagePath="AspNet\Templates\net8.0\BlazorIdentity\Pages\" />
     <None Pack="true" Include="AspNet\Templates\net9.0\Files\ApplicationUser.tt" PackagePath="AspNet\Templates\net8.0\Files\" />
-    <None Pack="true" Include="AspNet\Templates\net9.0\Files\_ValidationScriptsPartial.cshtml" PackagePath="AspNet\Templates\net8.0\Files\" />
+    <!-- _ValidationScriptsPartial.cshtml for net8.0 is handled in a later ItemGroup to avoid
+         the net9.0 Update glob overriding its PackagePath (see below) -->
     <!-- Only copy CodeModificationConfigs that don't exist in net8.0 (efControllerChanges, identityChanges, razorPagesChanges) -->
     <!-- minimalApiChanges.json, blazorWebCrudChanges.json, blazorIdentityChanges.json already exist in net8.0 -->
     <None Pack="true" Include="AspNet\Templates\net9.0\CodeModificationConfigs\efControllerChanges.json" PackagePath="AspNet\CodeModificationConfigs\net8.0\" />
@@ -142,10 +143,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>AspNet\Templates\net8.0\Files\ApplicationUser.tt</Link>
     </None>
-    <None Include="AspNet\Templates\net9.0\Files\_ValidationScriptsPartial.cshtml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>AspNet\Templates\net8.0\Files\_ValidationScriptsPartial.cshtml</Link>
-    </None>
+    <!-- _ValidationScriptsPartial.cshtml CopyToOutputDirectory for net8.0 is handled
+         in a later ItemGroup to avoid the net9.0 Update glob below adding Pack metadata -->
     <!--
       net8.0 CodeModificationConfigs is missing efControllerChanges, identityChanges,
       razorPagesChanges. Copy from net9.0 so CopyCodeModConfigsToPacked picks them up.
@@ -199,12 +198,14 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>AspNet\Templates\net11.0\CodeModificationConfigs\%(Filename)%(Extension)</Link>
     </None>
-    <!-- Update .cshtml and .razor.js files to add Pack metadata -->
-    <None Update="AspNet\Templates\net9.0\Files\*.cshtml" Pack="true" PackagePath="AspNet\Templates\net9.0\Files\" />
-    <None Update="AspNet\Templates\net10.0\Files\*.cshtml" Pack="true" PackagePath="AspNet\Templates\net10.0\Files\" />
-    <None Update="AspNet\Templates\net10.0\Files\*.razor.js" Pack="true" PackagePath="AspNet\Templates\net10.0\Files\" />
-    <None Update="AspNet\Templates\net11.0\Files\*.cshtml" Pack="true" PackagePath="AspNet\Templates\net11.0\Files\" />
-    <None Update="AspNet\Templates\net11.0\Files\*.razor.js" Pack="true" PackagePath="AspNet\Templates\net11.0\Files\" />
+    <!-- Update .cshtml and .razor.js files to add Pack metadata.
+         PackagePath must NOT include 'Files\' because NuGet already appends
+         %(RecursiveDir) ('Files\') from the net*\**\*.* glob above. -->
+    <None Update="AspNet\Templates\net9.0\Files\*.cshtml" Pack="true" PackagePath="AspNet\Templates\net9.0\" />
+    <None Update="AspNet\Templates\net10.0\Files\*.cshtml" Pack="true" PackagePath="AspNet\Templates\net10.0\" />
+    <None Update="AspNet\Templates\net10.0\Files\*.razor.js" Pack="true" PackagePath="AspNet\Templates\net10.0\" />
+    <None Update="AspNet\Templates\net11.0\Files\*.cshtml" Pack="true" PackagePath="AspNet\Templates\net11.0\" />
+    <None Update="AspNet\Templates\net11.0\Files\*.razor.js" Pack="true" PackagePath="AspNet\Templates\net11.0\" />
     <!-- Include DbContext templates in build output (source is in TextTemplating project, only Pack items above) -->
     <None Include="$(RepoRoot)src\dotnet-scaffolding\Microsoft.DotNet.Scaffolding.TextTemplating\DbContext\net8.0\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -226,6 +227,19 @@
     <None Include="$(RepoRoot)src\dotnet-scaffolding\Microsoft.DotNet.Scaffolding.TextTemplating\DbContext\net11.0\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>AspNet\Templates\net11.0\DbContext\%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+
+  <!--
+    net8.0 does not have its own _ValidationScriptsPartial.cshtml, so we re-use
+    the net9.0 copy.  This item MUST live in its own ItemGroup, placed AFTER the
+    Update that sets Pack metadata for net9.0 cshtml files; otherwise that Update
+    would override the PackagePath to net9.0 and cause a duplicate-file NU5118 error.
+  -->
+  <ItemGroup>
+    <None Include="AspNet\Templates\net9.0\Files\_ValidationScriptsPartial.cshtml" Pack="true" PackagePath="AspNet\Templates\net8.0\Files\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>AspNet\Templates\net8.0\Files\_ValidationScriptsPartial.cshtml</Link>
     </None>
   </ItemGroup>
 
